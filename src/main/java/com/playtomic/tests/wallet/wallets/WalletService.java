@@ -36,7 +36,7 @@ class WalletService {
         try {
             final var walletsToppedUp = repository.topUp(id, amount);
             if (walletsToppedUp != 1) {
-                throw new WalletCouldNotBeToppedUpException(id);
+                throw new NoWalletToppedUpException(id);
             }
         } catch (final Exception walletException) {
             stripeService.refund(payment.getId());

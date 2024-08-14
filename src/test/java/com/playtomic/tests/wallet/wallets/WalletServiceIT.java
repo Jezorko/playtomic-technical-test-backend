@@ -110,7 +110,7 @@ class WalletServiceIT {
 
         // when topping up fails
         assertThatCode(() -> walletService.topUp(walletId, SOME_CARD_NUMBER, SOME_TOP_UP_AMOUNT))
-                .isInstanceOf(WalletCouldNotBeToppedUpException.class);
+                .isInstanceOf(NoWalletToppedUpException.class);
 
         // should refund with Stripe
         verify(stripeService, times(1)).refund(SOME_PAYMENT_ID);

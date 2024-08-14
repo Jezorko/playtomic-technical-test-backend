@@ -16,6 +16,9 @@ import java.net.URI;
  * This test is failing with the current implementation.
  *
  * How would you test this?
+ *
+ * A: Ideally use contract testing, but if contracts not provided - mock of the service.
+ *    The latter could be done with e.g. WireMock.
  */
 public class StripeServiceTest {
 

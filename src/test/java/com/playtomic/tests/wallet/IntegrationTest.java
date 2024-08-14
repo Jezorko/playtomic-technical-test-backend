@@ -1,5 +1,6 @@
 package com.playtomic.tests.wallet;
 
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -12,6 +13,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Target(TYPE)
 @SpringBootTest
 @Retention(RUNTIME)
+@AutoConfigureMockMvc
 @ActiveProfiles(profiles = "test")
 public @interface IntegrationTest {
 }
