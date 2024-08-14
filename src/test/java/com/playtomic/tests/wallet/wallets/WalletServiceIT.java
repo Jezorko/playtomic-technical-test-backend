@@ -39,7 +39,7 @@ class WalletServiceIT {
         // then the balance is zero
         assertThat(createdResult)
                 .isNotNull()
-                .extracting(WalletEntity::getBalance)
+                .extracting(Wallet::getBalance)
                 .is(comparingEqualTo(ZERO));
 
         // when the same wallet is fetched by ID
@@ -49,8 +49,8 @@ class WalletServiceIT {
         assertThat(fetchedResult)
                 .get()
                 .isNotSameAs(createdResult)
-                .returns(createdResult.getId(), WalletEntity::getId)
-                .extracting(WalletEntity::getBalance)
+                .returns(createdResult.getId(), Wallet::getId)
+                .extracting(Wallet::getBalance)
                 .is(comparingEqualTo(createdResult.getBalance()));
     }
 
@@ -72,7 +72,7 @@ class WalletServiceIT {
         // and fetch new balance
         final var newBalance = walletService.getById(wallet.getId());
         assertThat(newBalance).get()
-                .extracting(WalletEntity::getBalance)
+                .extracting(Wallet::getBalance)
                 .is(comparingEqualTo(SOME_TOP_UP_AMOUNT));
     }
 
@@ -95,7 +95,7 @@ class WalletServiceIT {
         // and return same balance
         final var newBalance = walletService.getById(wallet.getId());
         assertThat(newBalance).get()
-                .extracting(WalletEntity::getBalance)
+                .extracting(Wallet::getBalance)
                 .is(comparingEqualTo(ZERO));
     }
 

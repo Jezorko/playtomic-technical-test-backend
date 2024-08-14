@@ -18,12 +18,12 @@ class WalletService {
     private final WalletRepository repository;
     private final StripeService stripeService;
 
-    WalletEntity create() {
-        return repository.save(new WalletEntity(null, ZERO));
+    Wallet create() {
+        return new Wallet(repository.save(new WalletEntity(null, ZERO)));
     }
 
-    Optional<WalletEntity> getById(final UUID id) {
-        return repository.findById(id);
+    Optional<Wallet> getById(final UUID id) {
+        return repository.findById(id).map(Wallet::new);
     }
 
     @Transactional
