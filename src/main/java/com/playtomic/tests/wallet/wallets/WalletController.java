@@ -1,4 +1,4 @@
-package com.playtomic.tests.wallet.api;
+package com.playtomic.tests.wallet.wallets;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RequestMapping;
