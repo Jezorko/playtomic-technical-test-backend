@@ -14,12 +14,23 @@ class WalletServiceIT {
     private WalletService walletService;
 
     @Test
-    void shouldCreateANewWallet() {
-        var result = assertDoesNotThrow(() -> walletService.create());
+    void shouldCreateAndFetchANewWallet() {
+        // when a new wallet is created
+        var createdResult = assertDoesNotThrow(() -> walletService.create());
 
-        assertThat(result)
+        // then the balance is zero
+        assertThat(createdResult)
                 .isNotNull()
                 .returns(0L, WalletEntity::getBalanceInCents);
+
+        // when the same wallet is fetched by ID
+        var fetchedResult = walletService.getById(createdResult.getId());
+
+        // then the result is equal (but not same as) the created original
+        assertThat(fetchedResult)
+                .get()
+                .isNotSameAs(createdResult)
+                .isEqualTo(createdResult);
     }
 
 }
