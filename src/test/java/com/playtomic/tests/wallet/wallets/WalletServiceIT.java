@@ -4,6 +4,8 @@ import com.playtomic.tests.wallet.IntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import static com.playtomic.tests.wallet.TestingExtensions.comparingEqualTo;
+import static java.math.BigDecimal.ZERO;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -21,7 +23,8 @@ class WalletServiceIT {
         // then the balance is zero
         assertThat(createdResult)
                 .isNotNull()
-                .returns(0L, WalletEntity::getBalanceInCents);
+                .extracting(WalletEntity::getBalance)
+                .is(comparingEqualTo(ZERO));
 
         // when the same wallet is fetched by ID
         var fetchedResult = walletService.getById(createdResult.getId());
@@ -30,7 +33,9 @@ class WalletServiceIT {
         assertThat(fetchedResult)
                 .get()
                 .isNotSameAs(createdResult)
-                .isEqualTo(createdResult);
+                .returns(createdResult.getId(), WalletEntity::getId)
+                .extracting(WalletEntity::getBalance)
+                .is(comparingEqualTo(createdResult.getBalance()));
     }
 
 }
