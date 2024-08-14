@@ -10,11 +10,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
+import static com.playtomic.tests.wallet.TestingExtensions.assertWalletsEqual;
 import static com.playtomic.tests.wallet.TestingExtensions.comparingEqualTo;
-import static java.math.BigDecimal.ZERO;
 import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -49,38 +51,27 @@ class WalletControllerIT {
     @Test
     @SneakyThrows
     void whenWalletDoesNotExist_shouldReturnNotFound() {
-        mockMvc.perform(get("/wallets/" + randomUUID()))
-                .andExpect(status().isNotFound());
+        whenWalletIsFetchedById(randomUUID()).andExpect(status().isNotFound());
     }
 
     @Test
     @SneakyThrows
     void whenWalletExists_shouldReturnWallet() {
         // given an existing wallet
-        final var wallet = service.create();
-        repository.flush();
+        final var wallet = givenAnExistingWallet();
 
         // when fetched by ID
-        final var fetchResponse = mockMvc.perform(get("/wallets/" + wallet.getId()))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getResponse();
-
-        final var fetchedWallet = objectMapper.readValue(fetchResponse.getContentAsString(), Wallet.class);
+        final var fetchedWallet = whenWalletObjectIsFetchedById(wallet.getId());
 
         // should have same balance as original
-        assertThat(fetchedWallet)
-                .returns(wallet.getId(), Wallet::getId)
-                .extracting(Wallet::getBalance)
-                .is(comparingEqualTo(wallet.getBalance()));
+        assertWalletsEqual(fetchedWallet, wallet);
     }
 
     @Test
     @SneakyThrows
     void whenTopUpSuccessful_shouldReturnWalletWithNewBalance() {
         // given an existing wallet
-        final var wallet = service.create();
-        repository.flush();
+        final var wallet = givenAnExistingWallet();
 
         // and a top-up request
         final var request = new WalletTopUpRequest(SOME_CARD_NUMBER, SOME_TOP_UP_AMOUNT);
@@ -90,20 +81,11 @@ class WalletControllerIT {
                 .thenReturn(new Payment(SOME_PAYMENT_ID));
 
         // when topped up
-        mockMvc.perform(
-                        post("/wallets/" + wallet.getId() + "/topUps")
-                                .contentType(APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsBytes(request))
-                )
+        whenWalletIsToppedUp(wallet.getId(), request)
                 .andExpect(status().isNoContent());
 
         // and fetched
-        final var fetchResponse = mockMvc.perform(get("/wallets/" + wallet.getId()))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getResponse();
-
-        final var fetchedWallet = objectMapper.readValue(fetchResponse.getContentAsString(), Wallet.class);
+        final var fetchedWallet = whenWalletObjectIsFetchedById(wallet.getId());
 
         // should have updated balance
         assertThat(fetchedWallet)
@@ -126,11 +108,7 @@ class WalletControllerIT {
                 .thenReturn(new Payment(SOME_PAYMENT_ID));
 
         // when topped up
-        mockMvc.perform(
-                        post("/wallets/" + walletId + "/topUps")
-                                .contentType(APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsBytes(request))
-                )
+        whenWalletIsToppedUp(walletId, request)
                 .andExpect(status().isNotFound());
     }
 
@@ -138,8 +116,7 @@ class WalletControllerIT {
     @SneakyThrows
     void whenTopUpUnsuccessfulBecauseOfStripeIssue_shouldReturnSameBalance() {
         // given an existing wallet
-        final var wallet = service.create();
-        repository.flush();
+        final var wallet = givenAnExistingWallet();
 
         // and a top-up request
         final var request = new WalletTopUpRequest(SOME_CARD_NUMBER, SOME_TOP_UP_AMOUNT);
@@ -149,26 +126,43 @@ class WalletControllerIT {
                 .thenThrow(new StripeAmountTooSmallException());
 
         // when topped up
-        mockMvc.perform(
-                        post("/wallets/" + wallet.getId() + "/topUps")
-                                .contentType(APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsBytes(request))
-                )
-                .andExpect(status().isInternalServerError());
+        whenWalletIsToppedUp(wallet.getId(), request).andExpect(status().isInternalServerError());
 
         // and fetched
-        final var fetchResponse = mockMvc.perform(get("/wallets/" + wallet.getId()))
+        final var fetchedWallet = whenWalletObjectIsFetchedById(wallet.getId());
+
+        // should have same balance as original
+        assertWalletsEqual(fetchedWallet, wallet);
+    }
+
+    private Wallet givenAnExistingWallet() {
+        final var wallet = service.create();
+        repository.flush();
+        return wallet;
+    }
+
+    @SneakyThrows
+    private ResultActions whenWalletIsFetchedById(final UUID id) {
+        return mockMvc.perform(get("/wallets/" + id));
+    }
+
+    @SneakyThrows
+    private Wallet whenWalletObjectIsFetchedById(final UUID id) {
+        final var fetchResponse = whenWalletIsFetchedById(id)
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse();
 
-        final var fetchedWallet = objectMapper.readValue(fetchResponse.getContentAsString(), Wallet.class);
+        return objectMapper.readValue(fetchResponse.getContentAsString(), Wallet.class);
+    }
 
-        // should have same balance as original
-        assertThat(fetchedWallet)
-                .returns(wallet.getId(), Wallet::getId)
-                .extracting(Wallet::getBalance)
-                .is(comparingEqualTo(ZERO));
+    @SneakyThrows
+    private ResultActions whenWalletIsToppedUp(UUID walletId, WalletTopUpRequest request) {
+        return mockMvc.perform(
+                post("/wallets/" + walletId + "/topUps")
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(request))
+        );
     }
 
 }
